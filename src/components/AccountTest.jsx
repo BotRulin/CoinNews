@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/Supabase';
-import {StyleSheet, View, Alert, Image, Text, TouchableOpacity} from 'react-native';
-import { Button, Input } from 'react-native-elements';
-import { Session } from '@supabase/supabase-js';
-import components from "../lib/Components";
+import {StyleSheet, View, Alert, Image, Text, TouchableOpacity, ScrollView} from 'react-native';
+import BottomMenu from "./BottomMenu";
+import Icon from "react-native-vector-icons/FontAwesome";
 
 export default function Account({ session }) {
     const [loading, setLoading] = useState(true);
     const [username, setUsername] = useState('');
     const [website, setWebsite] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
+    const [cryptocurrencies, setCryptocurrencies] = useState([]);
 
     useEffect(() => {
         if (session) getProfile();
-    }, [session]);
+        getCryptocurrencies().then(setCryptocurrencies);
+        console.log(cryptocurrencies)
+    }, [session], [cryptocurrencies], []);
 
     async function getProfile() {
         try {
@@ -43,23 +45,15 @@ export default function Account({ session }) {
         }
     }
 
-    async function updateProfile({ username, website, avatar_url }) {
+    async function sendPasswordResetEmail() {
         try {
             setLoading(true);
             if (!session?.user) throw new Error('No user on the session!');
-
-            const updates = {
-                id: session?.user.id,
-                username,
-                website,
-                avatar_url,
-                updated_at: new Date(),
-            };
-
-            const { error } = await supabase.from('profiles').upsert(updates);
-
+            const { error } = await supabase.auth.resetPasswordForEmail(session.user.email);
             if (error) {
                 throw error;
+            }else {
+                Alert.alert("Se ha enviado un correo electrónico para restablecer tu contraseña.");
             }
         } catch (error) {
             if (error instanceof Error) {
@@ -70,43 +64,107 @@ export default function Account({ session }) {
         }
     }
 
-    return (
-        <View style={styles.container}>
-            <Image alt={"Logo"} style={styles.logo} source={require('../../assets/icon.png')}/>
-            <View style={[styles.verticallySpaced, styles.mt20]}>
-                <Text style={styles.textMail}>{session?.user?.email}</Text>
-            </View>
-            {/*Parte perfil botones*/}
-            <TouchableOpacity title={loading ? 'Loading ...' : 'Update'}
-                              onPress={() => updateProfile({username, website, avatar_url: avatarUrl})}
-                              disabled={loading}
-                              style={styles.btnCambiarContrasena}>
-                <Text style={styles.textCambiarContrasena}>Cambiar contraseña</Text>
-            </TouchableOpacity>
+    async function getCryptocurrencies() {
+        try {
+            setLoading(true);
+            if (!session?.user) throw new Error('No user on the session!');
+            const { data, error } = await supabase
+                .from('cryptocurrency_tracking')
+                .select('cryptocurrencies(id, symbol)')
+                .eq('user_id', session?.user.id);
 
-            <TouchableOpacity onPress={() => supabase.auth.signOut()} style={styles.btnCerrarSesionUser}>
-                <Text style={styles.textCerrarSesionUser}>Cerrar sesión</Text>
-            </TouchableOpacity>
-            <View style={[styles.verticallySpaced, styles.mt20, styles.flexRow]}>
-                <Text style={styles.Siguiendo}>Siguiendo</Text>
-                <Text style={styles.followingNumber}>5</Text>
-            </View>
-            <View style={[styles.verticallySpaced, styles.mt20, styles.flexRow]}>
-                <Image alt={"Logo"} style={styles.logoFollowing} source={require('../../assets/icon.png')}/>
-                <Text style={styles.Siguiendo}>$SCPT</Text>
-                <TouchableOpacity style={styles.btnFollowing}>
-                    <Text style={styles.textFollowing}>Dejar de</Text>
+            if (error) {
+                throw error;
+            }
+            if (data) {
+                return data.map(item => item.cryptocurrencies);
+            }
+        } catch (error) {
+            if (error instanceof Error) {
+                Alert.alert(error.message);
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function unfollowCryptocurrency(cryptocurrencyId) {
+        try {
+            setLoading(true);
+            if (!session?.user) throw new Error('No user on the session!');
+            const { error } = await supabase
+                .from('cryptocurrency_tracking')
+                .delete()
+                .eq('user_id', session?.user.id)
+                .eq('cryptocurrency_id', cryptocurrencyId);
+            if (error) {
+                throw error;
+            }
+        } catch (error) {
+            if (error instanceof Error) {
+                Alert.alert(error.message);
+            }
+        } finally {
+            setLoading(false);
+            getCryptocurrencies().then(setCryptocurrencies); // Vuelve a obtener las criptomonedas
+        }
+    }
+
+    return (
+            <View style={styles.container}>
+            <View style={styles.container2}>
+                <Image alt={"Logo"} style={styles.logo} source={require('../../assets/icon.png')}/>
+                <View style={[styles.verticallySpaced, styles.mt20]}>
+                    <Text style={styles.textMail}>{session?.user?.email}</Text>
+                </View>
+                {/*Parte perfil botones*/}
+                <TouchableOpacity title={loading ? 'Loading ...' : 'Enviar correo'}
+                                  onPress={sendPasswordResetEmail}
+                                  disabled={loading}
+                                  style={styles.btnCambiarContrasena}>
+                    <Text style={styles.textCambiarContrasena}>Cambiar contraseña</Text>
                 </TouchableOpacity>
+                <TouchableOpacity onPress={() => supabase.auth.signOut()} style={styles.btnCerrarSesionUser}>
+                    <Text style={styles.textCerrarSesionUser}>Cerrar sesión</Text>
+                </TouchableOpacity>
+                <View style={[styles.verticallySpaced, styles.mt20, styles.flexRow]}>
+                    <Text style={styles.Siguiendo}>Siguiendo</Text>
+                    <Text style={styles.followingNumber}>{cryptocurrencies.length}</Text>
+                </View>
+                <ScrollView style={styles.scrollView}>
+                    {cryptocurrencies.map((item, index) => (
+                        <View key={index} style={[styles.verticallySpaced, styles.mt20, styles.flexRow, styles.spaceBetween]}>
+                            <View style={styles.flexRow}>
+                                <Image alt={"Logo"} style={styles.logoFollowing} source={require('../../assets/icon.png')}/>
+                                <Text style={styles.Siguiendo}>${item.symbol}</Text>
+                            </View>
+                            <TouchableOpacity style={styles.btnFollowing} onPress={() => unfollowCryptocurrency(item.id)}>
+                                <Text style={styles.textFollowing}>Dejar de seguir</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ))}
+                </ScrollView>
+                </View>
+                <BottomMenu/>
             </View>
-        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         height: '100%',
+        backgroundColor: '#000000',
+    },
+    container2: {
+        height: '100%',
         padding: 12,
         backgroundColor: '#000000',
+    },
+    scrollView: {
+        marginBottom: '20%',
+    },
+    spaceBetween: {
+        justifyContent: 'space-between',
     },
     verticallySpaced: {
         paddingTop: 4,
@@ -143,6 +201,15 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch',
         marginBottom: 10,
     },
+    btnCerrarSesionUser: {
+        backgroundColor: '#27272A', // Cambia el color de fondo del TouchableOpacity aquí
+        padding: 10,
+        borderRadius: 5, // Opcional: Agrega bordes redondeados al botón
+        alignSelf: 'stretch',
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#FDA4AF',
+    },
     textCambiarContrasena: {
         color: '#020617',
         fontSize: 16,
@@ -162,6 +229,8 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     textFollowing: {
+        paddingLeft: 5,
+        paddingRight: 5,
         color: '#F1F5F9',
         fontSize: 16,
         textAlign: 'center',
@@ -180,5 +249,5 @@ const styles = StyleSheet.create({
     flexRow: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
+    }
 });
