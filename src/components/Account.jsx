@@ -14,6 +14,10 @@ export default function Account({ session }) {
     const [cryptocurrencies, setCryptocurrencies] = useState([]);
     const navigation = useNavigation();
 
+    if (session == null){
+        session = route.params?.session;
+    }
+
     useEffect(() => {
         if (session) getProfile();
         getCryptocurrencies().then(setCryptocurrencies);
