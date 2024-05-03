@@ -20,7 +20,7 @@ import { View } from "react-native";
 
 {/* Screens */}
 import Main from './src/Main'
-import Account from "./src/components/AccountTest";
+import Account from "./src/components/Account";
 import Home from "./src/components/Home";
 import BottomMenu from "./src/components/BottomMenu";
 import {supabase} from "./src/lib/Supabase"; // Asegúrate de importar BottomMenu

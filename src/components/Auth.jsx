@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { Alert, StyleSheet, View, AppState } from 'react-native'
+import {Alert, StyleSheet, View, AppState, Text, TouchableOpacity, Image, TextInput} from 'react-native'
 import { supabase } from '../lib/Supabase'
-import { Button, Input } from 'react-native-elements'
+import Icon from 'react-native-vector-icons/FontAwesome';
+
 
 // Tells Supabase Auth to continuously refresh the session automatically if
 // the app is in the foreground. When this is added, you will continue to receive
@@ -19,6 +20,7 @@ export default function Auth() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
+    const [hidePassword, setHidePassword] = useState(true)
 
     async function signInWithEmail() {
         setLoading(true)
@@ -46,69 +48,115 @@ export default function Auth() {
         setLoading(false)
     }
 
+    const styles = StyleSheet.create({
+        /* Container Styles */
+        container: {
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#09090b',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+
+        /* Image Styles */
+        logo: {
+            width: '30%',
+            height: '10%',
+            marginTop: '-20%',
+            marginBottom: '5%',
+        },
+
+        /* Text Styles */
+        title: {
+            color: 'white',
+            fontSize: 32,
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            marginBottom: 10,
+        },
+        subtitle: {
+            color: 'lightgrey',
+            fontSize: 16,
+            textTransform: 'lowercase',
+            marginBottom: 30,
+        },
+
+        /* Input Styles */
+        inputContainer: {
+            flexDirection: 'row',
+            width: '80%',
+            marginBottom: 15,
+            backgroundColor: 'white',
+            borderRadius: 50,
+            borderColor: 'white',
+            borderWidth: 1,
+            padding: 10,
+        },
+        icon: {
+            marginRight: 10,
+        },
+
+        /* Button Styles */
+        buttonContainer: {
+            width: '40%',
+            marginTop: 15,
+            backgroundColor: '#27272a',
+            borderWidth: 2,
+            borderColor: '#52525b',
+            borderRadius: 20,
+            padding: 10,
+        },
+        buttonText: {
+            fontSize: 20,
+            color: 'white',
+            textAlign: 'center',
+        },
+    })
+
     return (
         <View style={styles.container}>
-            <View style={[styles.verticallySpaced, styles.mt20]}>
-                <Input
-                    label="Email"
-                    leftIcon={{ type: 'font-awesome', name: 'envelope' }}
+            {/* Logo */}
+            <Image alt={"Logo"} style={styles.logo} source={require('../../assets/icon.png')}/>
+            {/* Titles */}
+            <Text style={styles.title}>INICIA SESIÓN</Text>
+            <Text style={styles.subtitle}>para poder continuar</Text>
+            {/* Inputs */}
+            <View style={styles.inputContainer}>
+                <Icon name="envelope" size={20} color="black" style={styles.icon} />
+                <TextInput
                     onChangeText={(text) => setEmail(text)}
                     value={email}
-                    placeholder="email@address.com"
+                    placeholder="Email"
                     autoCapitalize={'none'}
                 />
             </View>
-            <View style={styles.verticallySpaced}>
-                <Input
-                    label="Password"
-                    leftIcon={{ type: 'font-awesome', name: 'lock' }}
-                    onChangeText={(text) => setPassword(text)}
-                    value={password}
-                    secureTextEntry={true}
-                    placeholder="Password"
-                    autoCapitalize={'none'}
-                />
+            <View style={{...styles.inputContainer, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Icon name="lock" size={20} color="black" style={{...styles.icon, marginLeft: 4, marginRight: 12}} />
+                    <TextInput
+                        onChangeText={(text) => setPassword(text)}
+                        value={password}
+                        secureTextEntry={hidePassword}
+                        placeholder="Password"
+                        autoCapitalize={'none'}
+                    />
+                </View>
+                <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
+                    <Icon name={hidePassword ? 'eye-slash' : 'eye'} size={20} color="black" />
+                </TouchableOpacity>
             </View>
-            <View style={[styles.verticallySpaced, styles.mt20]}>
-                <Button title="Sign in" disabled={loading} onPress={() => signInWithEmail()} />
-            </View>
-            <View style={styles.verticallySpaced}>
-                <Button title="Sign up" disabled={loading} onPress={() => signUpWithEmail()} />
-            </View>
+
+            {/* Buttons */}
+            <TouchableOpacity style={{marginTop:'2%', marginBottom:'3%'}} disabled={loading} onPress={() => signUpWithEmail()}>
+                <Text style={{color: '#60a5fa'}}>No tengo cuenta de CoinNews</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.buttonContainer} disabled={loading} onPress={() => signInWithEmail()}>
+                <Text style={styles.buttonText}>Continuar</Text>
+            </TouchableOpacity>
         </View>
     )
 }
 
-const styles = StyleSheet.create({
-    container: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#09090b',
-        display: 'flex',
-        flexDirection: 'column'
-    },
-    verticallySpaced: {
-        paddingTop: 4,
-        paddingBottom: 4,
-        alignSelf: 'stretch',
-    },
-    logo: {
-        width: '50%',
-        height: '50%',
-        display: 'flex',
-        resizeMode: 'contain',
-        alignSelf: 'center',
-    },
-    strong: {
-        color: 'white',
-        fontSize: 25,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-        alignSelf: 'center',
-        marginTop: '-20%',
-        marginBottom: '15%',
-    },
-    mt20: {
-        marginTop: 20,
-    },
-})
+

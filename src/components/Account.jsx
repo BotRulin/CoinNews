@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/Supabase';
 import {StyleSheet, View, Alert, Image, Text, TouchableOpacity, ScrollView} from 'react-native';
-import BottomMenu from "./BottomMenu";
+import {useNavigation, useRoute} from '@react-navigation/native';
 import Icon from "react-native-vector-icons/FontAwesome";
+import Home from "./Home";
 
 export default function Account({ session }) {
+    const route = useRoute();
     const [loading, setLoading] = useState(true);
     const [username, setUsername] = useState('');
     const [website, setWebsite] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
     const [cryptocurrencies, setCryptocurrencies] = useState([]);
+    const navigation = useNavigation();
 
     useEffect(() => {
         if (session) getProfile();
@@ -111,7 +114,7 @@ export default function Account({ session }) {
     }
 
     return (
-            <View style={styles.container}>
+        <View style={styles.container}>
             <View style={styles.container2}>
                 <Image alt={"Logo"} style={styles.logo} source={require('../../assets/icon.png')}/>
                 <View style={[styles.verticallySpaced, styles.mt20]}>
@@ -144,9 +147,27 @@ export default function Account({ session }) {
                         </View>
                     ))}
                 </ScrollView>
-                </View>
-                <BottomMenu/>
             </View>
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                position: 'absolute', // Posiciona el menú en la parte inferior
+                bottom: 0.5, // Asegura que el menú esté al final de la pantalla
+                width: '100%', // Asegura que el menú ocupe todo el ancho de la pantalla
+                paddingBottom: '10%',
+                paddingTop: '3%',
+                paddingHorizontal: '10%',
+                backgroundColor: '#000000',
+                borderStyle: 'solid',
+                borderTopColor: '#e2e8f0',
+                borderWidth: 1,
+            }}>
+                <Icon name="home" size={20} color="#e2e8f0" onPress={ () => navigation.navigate('Home', { session: session })} />
+                <Icon name="search" size={20} color="#e2e8f0" />
+                <Icon name="user" size={20} color="#e2e8f0" />
+            </View>
+        </View>
     );
 }
 

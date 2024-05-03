@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Home from "./Home";
-import Account from "./AccountTest";
+import Account from "./Account";
 
 
 export default function BottomMenu({ navigation }) {
