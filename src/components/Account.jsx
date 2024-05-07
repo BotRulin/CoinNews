@@ -3,7 +3,10 @@ import { supabase } from '../lib/Supabase';
 import {StyleSheet, View, Alert, Image, Text, TouchableOpacity, ScrollView} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import Icon from "react-native-vector-icons/FontAwesome";
-import Home from "./Home";
+import BottomNavigationBar from "./BottomMenu";
+import { CommonActions } from '@react-navigation/native';
+import { RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function Account({ session }) {
     const route = useRoute();
@@ -13,6 +16,7 @@ export default function Account({ session }) {
     const [avatarUrl, setAvatarUrl] = useState('');
     const [cryptocurrencies, setCryptocurrencies] = useState([]);
     const navigation = useNavigation();
+    const [refreshing, setRefreshing] = useState(false);
 
     if (session == null){
         session = route.params?.session;
@@ -23,6 +27,14 @@ export default function Account({ session }) {
         getCryptocurrencies().then(setCryptocurrencies);
         console.log(cryptocurrencies)
     }, [session], [cryptocurrencies], []);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            // Aquí puedes poner el código que quieres que se ejecute cada vez que la pantalla recibe el foco
+            // Por ejemplo, podrías llamar a una función para recargar los datos
+            getCryptocurrencies().then(setCryptocurrencies);
+        }, [])
+    );
 
     async function getProfile() {
         try {
@@ -51,6 +63,14 @@ export default function Account({ session }) {
             setLoading(false);
         }
     }
+
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        getCryptocurrencies().then(cryptos => {
+            setCryptocurrencies(cryptos);
+            setRefreshing(false);
+        });
+    }, []);
 
     async function sendPasswordResetEmail() {
         try {
@@ -138,7 +158,9 @@ export default function Account({ session }) {
                     <Text style={styles.Siguiendo}>Siguiendo</Text>
                     <Text style={styles.followingNumber}>{cryptocurrencies.length}</Text>
                 </View>
-                <ScrollView style={styles.scrollView}>
+                <ScrollView style={styles.scrollView} refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }>
                     {cryptocurrencies.map((item, index) => (
                         <View key={index} style={[styles.verticallySpaced, styles.mt20, styles.flexRow, styles.spaceBetween]}>
                             <View style={styles.flexRow}>
@@ -152,24 +174,8 @@ export default function Account({ session }) {
                     ))}
                 </ScrollView>
             </View>
-            <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                position: 'absolute', // Posiciona el menú en la parte inferior
-                bottom: 0.5, // Asegura que el menú esté al final de la pantalla
-                width: '100%', // Asegura que el menú ocupe todo el ancho de la pantalla
-                paddingBottom: '10%',
-                paddingTop: '3%',
-                paddingHorizontal: '10%',
-                backgroundColor: '#000000',
-                borderStyle: 'solid',
-                borderTopColor: '#e2e8f0',
-                borderWidth: 1,
-            }}>
-                <Icon name="home" size={20} color="#e2e8f0" onPress={ () => navigation.navigate('Home', { session: session })} />
-                <Icon name="search" size={20} color="#e2e8f0" />
-                <Icon name="user" size={20} color="#e2e8f0" />
+            <View>
+                <BottomNavigationBar navigation={navigation} session={session} />
             </View>
         </View>
     );

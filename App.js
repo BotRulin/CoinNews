@@ -20,8 +20,9 @@ import { View } from "react-native";
 
 {/* Screens */}
 import Main from './src/Main'
-import Account from "./src/components/Account";
+import Search from "./src/components/Search";
 import Home from "./src/components/Home";
+import CriptoScreen from "./src/components/CriptoScreen";
 import BottomMenu from "./src/components/BottomMenu";
 import {supabase} from "./src/lib/Supabase"; // Asegúrate de importar BottomMenu
 
@@ -45,8 +46,9 @@ export default function App() {
         <NavigationContainer>
             <Stack.Navigator initialRouteName="Main" screenOptions={{headerShown: false}}>
                 <Stack.Screen name="Main" component={MainScreen} />
-                <Stack.Screen name="Account" component={Account} />
+                <Stack.Screen name="Search" component={Search} />
                 <Stack.Screen name="Home" component={HomeScreen} />
+                <Stack.Screen name="CriptoScreen" component={CriptoScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );
