@@ -15,7 +15,11 @@ export default function Home() {
 
     useEffect(() => {
         if (session) {
-            fetchFollowedCryptosPosts();
+            try {
+                fetchFollowedCryptosPosts();
+            }catch (error) {
+                Alert.alert("Failed to fetch posts", error.message);
+            }
         }
     }, [session]);
 
@@ -67,10 +71,10 @@ export default function Home() {
     }
 
     const toggleLike = async (post) => {
-        const user_id = session.user.id;
-        const post_id = post.id;
-
         try {
+            const user_id = session.user.id;
+            const post_id = post.id;
+
             // Verificar si el usuario ya ha dado like al post
             const { count: likeCount, error: likeError } = await supabase
                 .from('cryptocurrency_post_likes')
@@ -139,35 +143,48 @@ export default function Home() {
         }
     };
 
+    async function fetchLogoUrl(symbol) {
+        try {
+            const response = await axios.get(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/info?symbol=${symbol}`, {
+                headers: {
+                    'X-CMC_PRO_API_KEY': '0630c906-7925-4d8a-935d-c417e837fc39'
+                }
+            });
+
+            return response.data.data[symbol].logo;
+        } catch (error) {
+            console.error('Error fetching logo URL:', error.message);
+        }
+    }
 
     return (
         <View style={styles.container}>
-        <View style={styles.container2}>
-            <ScrollView style={styles.scrollView}>
-                {posts.sort((a, b) => new Date(b.post_date) - new Date(a.post_date)).map((post, index) => (
-                <View key={index} style={styles.container3}>
-                    <View style={styles.flexRow}>
-                        <Image alt={"Logo"} style={styles.logoFollowing} source={require('../../assets/icon.png')}/>
-                        <Text style={styles.Siguiendo}>${post.symbol}</Text>
-                    </View>
-                    <Text style={styles.PostText}>{post.content}</Text>
-                    <Image alt={"Post Image"} style={styles.PostImage} source={post.image ? { uri: post.image } : require('../../assets/icon.png')}/>
-                    <View style={styles.likeButtonContainer}>
-                        <TouchableOpacity
-                            style={styles.likeButton}
-                            onPress={() => toggleLike(post)} // Aquí se cambió 'post.post_id' por 'post'
-                        >
-                            <Icon name={post.liked_by_user ? "heart" : "heart-o"} size={14} color="#ffffff" />
-                            <Text style={styles.likesCount}>{post.likes}</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            ))}
-            </ScrollView>
-        </View>
-        <View>
-            <BottomNavigationBar navigation={navigation} session={session} />
-        </View>
+            <View style={styles.container2}>
+                <ScrollView style={styles.scrollView}>
+                    {posts.sort((a, b) => new Date(b.post_date) - new Date(a.post_date)).map((post, index) => (
+                        <View key={index} style={styles.container3}>
+                            <View style={styles.flexRow}>
+                                <Image alt={"Logo"} style={styles.logoFollowing} source={require('../../assets/icon.png')}/>
+                                <Text style={styles.Siguiendo}>${post.symbol}</Text>
+                            </View>
+                            <Text style={styles.PostText}>{post.content}</Text>
+                            <Image alt={"Post Image"} style={styles.PostImage} source={post.image ? { uri: post.image } : require('../../assets/icon.png')}/>
+                            <View style={styles.likeButtonContainer}>
+                                <TouchableOpacity
+                                    style={styles.likeButton}
+                                    onPress={() => toggleLike(post)} // Aquí se cambió 'post.post_id' por 'post'
+                                >
+                                    <Icon name={post.liked_by_user ? "heart" : "heart-o"} size={14} color="#ffffff" />
+                                    <Text style={styles.likesCount}>{post.likes}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ))}
+                </ScrollView>
+            </View>
+            <View>
+                <BottomNavigationBar navigation={navigation} session={session} />
+            </View>
         </View>
     );
 }

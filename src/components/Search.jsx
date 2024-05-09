@@ -38,10 +38,30 @@ export default function Search() {
                 .from('cryptocurrencies')
                 .select('*');
 
+
             if (error) throw error;
 
             if (data) {
-                setCryptocurrencies(data); // Update cryptocurrencies
+                // Mapea los datos para incluir la imagen de la criptomoneda
+                const cryptosWithImages = [];
+                for (const crypto of data) {
+                    const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/info?symbol=${crypto.symbol}`, {
+                        headers: {
+                            'X-CMC_PRO_API_KEY': '0630c906-7925-4d8a-935d-c417e837fc39'
+                        }
+                    });
+                    const json = await response.json();
+                    const coinData = json.data && json.data[crypto.symbol] ? json.data[crypto.symbol] : {};
+                    if (coinData.logo) {
+                        cryptosWithImages.push({
+                            ...crypto,
+                            imageUrl: coinData.logo
+                        });
+                    } else {
+                        cryptosWithImages.push(crypto);
+                    }
+                }
+                setCryptocurrencies(cryptosWithImages); // Update cryptocurrencies
             }
         } catch (error) {
             if (error instanceof Error) {
@@ -51,6 +71,8 @@ export default function Search() {
             setLoading(false); // Set loading to false once the data fetch is complete or fails
         }
     }
+
+
 
     async function fetchFollowedCryptocurrencies() {
         try {
@@ -115,34 +137,43 @@ export default function Search() {
 
     return (
         <View style={styles.container}>
-            <TextInput
-                style={styles.searchInput}
-                placeholder="Buscar"
-                placeholderTextColor="#ccc"
-                onChangeText={text => setSearch(text)} // Update search state when text changes
-            />
-            {/* Render filtered cryptocurrencies */}
-            {filteredCryptocurrencies.map(crypto => (
-                <TouchableOpacity onPress={() => navigation.navigate('CriptoScreen', { crypto, session })}>
-                    <View style={styles.item} key={crypto.id}>
-                        <Image source={{ uri: `https://s2.coinmarketcap.com/static/img/coins/64x64/${crypto.symbol}.png` }} style={{ width: 30, height: 30, resizeMode: 'contain' }} />
-                        <Text style={styles.username}>{crypto.name}</Text>
-                        {followedCryptocurrencies.includes(crypto.id) ? (
-                            <TouchableOpacity style={styles.unfollowButton} onPress={() => unfollowCryptocurrency(crypto.id)}>
-                                <Text style={styles.unfollowButtonText}>Dejar de seguir</Text>
-                            </TouchableOpacity>
-                        ) : (
-                            <TouchableOpacity style={styles.followButton} onPress={() => followCryptocurrency(crypto.id)}>
-                                <Text style={styles.followButtonText}>Seguir</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </TouchableOpacity>
-            ))}
-            <BottomNavigationBar navigation={navigation} session={session} />
+            {loading ? (
+                <Text>Cargando...</Text>
+            ) : (
+                <>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Buscar"
+                        placeholderTextColor="#ccc"
+                        onChangeText={text => setSearch(text)} // Update search state when text changes
+                    />
+                    {/* Render filtered cryptocurrencies */}
+                    {filteredCryptocurrencies.map(crypto => (
+                        <TouchableOpacity onPress={() => navigation.navigate('CriptoScreen', { crypto, session })}>
+                            <View style={styles.item} key={crypto.id}>
+                                {crypto.imageUrl ? (
+                                    <Image source={{ uri: crypto.imageUrl }} style={{ width: 30, height: 30, resizeMode: 'cover', borderRadius: 15 }} />
+                                ) : (
+                                    <Image alt={"Logo"} style={{ width: 30, height: 30, resizeMode: 'cover', borderRadius: 15}} source={require('../../assets/icon.png')} />
+                                )}
 
+                                <Text style={styles.username}>{crypto.name}</Text>
+                                {followedCryptocurrencies.includes(crypto.id) ? (
+                                    <TouchableOpacity style={styles.unfollowButton} onPress={() => unfollowCryptocurrency(crypto.id)}>
+                                        <Text style={styles.unfollowButtonText}>Dejar de seguir</Text>
+                                    </TouchableOpacity>
+                                ) : (
+                                    <TouchableOpacity style={styles.followButton} onPress={() => followCryptocurrency(crypto.id)}>
+                                        <Text style={styles.followButtonText}>Seguir</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                    <BottomNavigationBar navigation={navigation} session={session} />
+                </>
+            )}
         </View>
-
     );
 }
 

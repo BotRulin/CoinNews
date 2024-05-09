@@ -104,7 +104,20 @@ export default function Account({ session }) {
                 throw error;
             }
             if (data) {
-                return data.map(item => item.cryptocurrencies);
+                // Mapea los datos para incluir la imagen de la criptomoneda
+                return Promise.all(data.map(async item => {
+                    const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/info?symbol=${item.cryptocurrencies.symbol}`, {
+                        headers: {
+                            'X-CMC_PRO_API_KEY': '0630c906-7925-4d8a-935d-c417e837fc39'
+                        }
+                    });
+                    const json = await response.json();
+                    const coinData = json.data[item.cryptocurrencies.symbol];
+                    return {
+                        ...item.cryptocurrencies,
+                        imageUrl: coinData.logo
+                    };
+                }));
             }
         } catch (error) {
             if (error instanceof Error) {
@@ -164,7 +177,7 @@ export default function Account({ session }) {
                     {cryptocurrencies.map((item, index) => (
                         <View key={index} style={[styles.verticallySpaced, styles.mt20, styles.flexRow, styles.spaceBetween]}>
                             <View style={styles.flexRow}>
-                                <Image alt={"Logo"} style={styles.logoFollowing} source={require('../../assets/icon.png')}/>
+                                <Image alt={"Logo"} style={styles.logoFollowing} source={{ uri: item.imageUrl }}/>
                                 <Text style={styles.Siguiendo}>${item.symbol}</Text>
                             </View>
                             <TouchableOpacity style={styles.btnFollowing} onPress={() => unfollowCryptocurrency(item.id)}>
@@ -222,6 +235,7 @@ const styles = StyleSheet.create({
     logoFollowing: {
         height: 27, // Cambia el valor según el tamaño deseado
         width: 27,
+        marginRight: 5,
         alignSelf: 'center',
         borderRadius: 100,
     },
