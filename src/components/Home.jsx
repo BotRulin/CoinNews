@@ -47,18 +47,21 @@ export default function Home() {
             }
 
             if (data && data.length > 0) {
-                const postsData = data.map(track => {
-                    return track.cryptocurrencies.cryptocurrency_posts.map(post => ({
-                        id: post.id,  // Asegúrate de incluir el id del post aquí
-                        symbol: track.cryptocurrencies.symbol,
-                        content: post.content,
-                        image: post.image,
-                        likes: post.likes,
-                        post_date: post.post_date,
-                        liked_by_user: post.cryptocurrency_post_likes ? post.cryptocurrency_post_likes.some(like => like.user_id === session.user.id) : false
-
-                    }));
-                }).flat();
+                const postsData = await Promise.all(data.map(async track => {
+                    return track.cryptocurrencies.cryptocurrency_posts.map(async post => {
+                        const logoUrl = await fetchLogoUrl(track.cryptocurrencies.symbol);
+                        return {
+                            id: post.id,
+                            symbol: track.cryptocurrencies.symbol,
+                            content: post.content,
+                            image: post.image,
+                            likes: post.likes,
+                            post_date: post.post_date,
+                            liked_by_user: post.cryptocurrency_post_likes ? post.cryptocurrency_post_likes.some(like => like.user_id === session.user.id) : false,
+                            logoUrl: logoUrl
+                        };
+                    });
+                })).reduce((acc, val) => acc.concat(val), []);
 
                 setPosts(postsData);
             } else {
@@ -69,6 +72,28 @@ export default function Home() {
             Alert.alert("Failed to fetch posts", error.message);
         }
     }
+
+    async function fetchLogoUrl(symbol) {
+        try {
+            const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/info?symbol=${symbol}`, {
+                headers: {
+                    'X-CMC_PRO_API_KEY': '0630c906-7925-4d8a-935d-c417e837fc39'
+                }
+            });
+            const json = await response.json();
+            if (json.data && json.data[symbol]) {
+                return json.data[symbol].logo;
+            } else {
+                console.error('No data for symbol:', symbol);
+                return ''; // Devuelve una cadena vacía si no hay datos para el símbolo
+            }
+        } catch (error) {
+            console.error('Error fetching logo URL:', error.message);
+            return ''; // Devuelve una cadena vacía en caso de error
+        }
+    }
+
+
 
     const toggleLike = async (post) => {
         try {
@@ -143,20 +168,6 @@ export default function Home() {
         }
     };
 
-    async function fetchLogoUrl(symbol) {
-        try {
-            const response = await axios.get(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/info?symbol=${symbol}`, {
-                headers: {
-                    'X-CMC_PRO_API_KEY': '0630c906-7925-4d8a-935d-c417e837fc39'
-                }
-            });
-
-            return response.data.data[symbol].logo;
-        } catch (error) {
-            console.error('Error fetching logo URL:', error.message);
-        }
-    }
-
     return (
         <View style={styles.container}>
             <View style={styles.container2}>
@@ -164,7 +175,7 @@ export default function Home() {
                     {posts.sort((a, b) => new Date(b.post_date) - new Date(a.post_date)).map((post, index) => (
                         <View key={index} style={styles.container3}>
                             <View style={styles.flexRow}>
-                                <Image alt={"Logo"} style={styles.logoFollowing} source={require('../../assets/icon.png')}/>
+                                <Image alt={"Logo"} style={styles.logoFollowing} source={{ uri: post.logoUrl }}/>
                                 <Text style={styles.Siguiendo}>${post.symbol}</Text>
                             </View>
                             <Text style={styles.PostText}>{post.content}</Text>
